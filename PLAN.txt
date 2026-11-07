@@ -1,0 +1,148 @@
+================================================================================
+BASALT — UI KÜTÜPHANESİ PLANI / v0.1.0
+Tarih: 2026-11-07 · Hedef: Fluent / WindUI / Rayfield / Obsidian sınıfının üstü
+================================================================================
+
+1. KARAR: TEK DOSYA, ÇOK MODÜL
+--------------------------------------------------------------------------------
+Executor'lar tek URL çeker: loadstring(game:HttpGet(url))(). Bu yüzden dağıtım
+TEK dosya. Ama 3.700 satırı tek dosyada elle yazmak bakımı imkansız kılar.
+
+Çözüm:
+  src/           27 modül, her biri tek sorumluluk
+  tools/build.py modülleri bağımlılık sırasına göre birleştirir
+  dist/basalt.luau  tek dosya, ~3.750 satır, 89 KB, sıfır dış bağımlılık
+
+Build çıktısı kendi özel `require`'ını taşır; kullanıcı modül görmez.
+WindUI, Fluent, Rayfield de aynı modeli kullanır (kaynak modüler, çıktı tek).
+
+2. DURUM (v0.1.0 — tamamlandı)
+--------------------------------------------------------------------------------
+[x] Çekirdek: class, signal, instance, guard
+[x] Servisler: theme, motion, flags, config, input, notify
+[x] Window: sürükleme, sekme şeridi, arama, overlay, durum satırı
+[x] Tab: sayfa, iki sütun, debounce'lu reflow
+[x] Section: otomatik yükseklik, katlama, rozet, sol/sağ sütun
+[x] Bileşenler (12): toggle, slider, range, dropdown (tek+çok), input,
+    keybind, colorpicker, button, label, paragraph, divider, space
+[x] Tema: 4 hazır palet + token bağlama (descendant taraması YOK)
+[x] Flag sistemi: anahtar -> değer -> sinyal; iki yönlü config bağı
+[x] Config: şema etiketli JSON, profil, EnumItem/Color3 kodek, debounce'lu autosave
+[x] Bildirim: yığın, tür rengi, süre çubuğu, elle kapatma
+[x] Doğrulama: luaparse 5.1 ile sözdizimi temiz; modül grafiği doğrulandı
+
+3. NEDEN BÖYLE
+--------------------------------------------------------------------------------
+3.1 Flag sahipliği
+    Kontrol değeri tutmaz; flag tutar. Kontrol yazar, flag sinyal verir, kontrol
+    çizer. Config yüklerken de aynı yol işler; ekran ile dosya asla ayrışmaz.
+    (Fluent'in Options modeli; bizde Key = string.)
+
+3.2 Tema bağlama
+    Her renk Theme:Bind(gui, "TextColor3", "text") ile bağlanır. Tema değişince
+    yalnız bağ listesi gezilir. WindUI/NeverLose'un GetDescendants + renk
+    eşleştirme yöntemi kırılgan ve yavaş; Basalt'ta yok.
+
+3.3 Layout
+    Section yükseklikleri UIListLayout + AutomaticSize ile ölçülür. Sekme
+    gövdesi iki sütunun maksimumu; reflow yalnız içerik boyutu değişince ve
+    50 ms debounce ile çalışır. Heartbeat döngüsü yok.
+
+3.4 Tek dosya çıktı
+    Modüler kaynak + deterministik build. Modül sırası build.py'de açıkça
+    yazılıdır; gizli sihir yok.
+
+3.5 Hata izolasyonu
+    Her callback pcall içinde. Bozuk bir kullanıcı callback'i arayüzü kilitlemez.
+
+4. API (özet)
+--------------------------------------------------------------------------------
+local Basalt = loadstring(game:HttpGet(".../dist/basalt.luau"))()
+
+local win = Basalt:Window{
+    Title = "Basalt", Size = UDim2.fromOffset(760, 500),
+    Theme = "basalt-dark", ToggleKey = Enum.KeyCode.RightShift,
+    Autosave = "main",
+}
+
+local tab = win:Tab{ Title = "Combat" }
+local sec = tab:Section{ Title = "Aim", Column = "left" }
+
+sec:Toggle{ Key = "aim", Title = "Enabled", Description = "Silent aim", Default = false }
+sec:Slider{ Key = "smooth", Title = "Smoothing", Min = 0, Max = 1, Rounding = 2 }
+sec:Range { Key = "fov", Title = "FOV", Min = 0, Max = 180, Default = {40,120} }
+sec:Dropdown{ Key = "part", Title = "Target", Values = {"Head","Torso"} }
+sec:Keybind{ Key = "key", Title = "Key", Default = Enum.KeyCode.Mouse4 }
+sec:Input  { Key = "name", Title = "Profile", Placeholder = "main" }
+sec:Colorpicker{ Key = "accent", Title = "Accent" }
+sec:Button { Title = "Save", Variant = "primary", Callback = function() end }
+sec:Paragraph{ Text = "..." }
+sec:Divider()
+
+Basalt.Flags:OnChanged("smooth", function(v) print(v) end)
+Basalt.Config:Save("main"); Basalt.Config:Load("main")
+win:Notify{ Title = "Ready", Content = "loaded", Type = "success", Duration = 4 }
+win:SetTheme("basalt-dusk")
+
+5. TASARIM KURALLARI (design rule.txt)
+--------------------------------------------------------------------------------
+- Tek vurgu rengi: accent. Durum renkleri yalnız durum için.
+- Boşluk ölçeği 4/8/12/16/24/32; kontrol yüksekliği 32 (mobilde 36).
+- Yarıçap: pencere 10, bölüm 8, kontrol 6.
+- Gradient, blur, glow, dekoratif gölge yok (varsayılan temada).
+- Durumlar: default / hover / active / focus / disabled / error.
+- Tipografi: Segoe UI (Roblox'ta Gotham ailesi), 14 / 13 / 12 / 11 / 10.
+- "Süs" olan hiçbir şey yok; her eleman bir işi karşılıyor.
+
+6. DOSYA HARİTASI
+--------------------------------------------------------------------------------
+basalt/
+  README.md
+  PLAN.txt                  bu dosya
+  src/
+    version.luau
+    core/class.luau         OOP, :Destroy, bağlantı sahipliği
+    core/signal.luau        bağımlılıksız olay
+    core/instance.luau      güvenli Instance kurucuları
+    core/guard.luau         gethui/CoreGui/protectgui, depolama, pano
+    services/theme.luau     4 palet + token bağlama
+    services/motion.luau    süre/easing token, reduced motion
+    services/flags.luau     anahtar-değer + sinyal + snapshot
+    services/config.luau    JSON, profil, kodek, autosave
+    services/input.luau     fare/dokunma birleşik, sürükleme, tuş yakalama
+    services/notify.luau    bildirim yığını
+    components/*.luau       12 bileşen (bir dosya = bir kontrol)
+    section.luau            kart + başlık + içerik
+    tab.luau                sayfa + iki sütun + reflow
+    window.luau             çerçeve, arama, overlay, durum
+    init.luau               kamu API'si
+  tools/build.py            birleştirme + grafik doğrulama
+  tools/parse_check.js      luaparse ile sözdizimi kontrolü
+  dist/basalt.luau          dağıtım dosyası
+  examples/demo.luau        örnek kullanım
+  mockups/                  tasarım görselleri + üretici betik
+
+7. YOL HARİTASI (v0.2+)
+--------------------------------------------------------------------------------
+P1  Komut paleti (Ctrl+K): tüm flag'lerde arama + atlama
+P2  Tooltip (400 ms gecikme), HSV colorpicker, çoklu renk seçimi
+P3  NeverLose uyum katmanı: mevcut 6.4k satırlık scriptleri tek satırla taşıma
+    (AddWindow/AddTab/AddSection/AddToggle... + Name="Section" frame garantisi)
+P4  Key system modülü (opsiyonel, varsayılan kapalı)
+P5  Mobil dock + tam genişlik modu, odak tuzağı, klavye gezinmesi (Tab/Enter)
+P6  Diyalog / onay modalı, ilerleme bileşeni, badge
+P7  Lua tarafında birim testler (sahte Roblox ortamı ile)
+
+8. BİLİNEN SINIRLAR (v0.1.0)
+--------------------------------------------------------------------------------
+- Pencere yeniden boyutlandırma yok (sabit boyut + sürükleme).
+- Klavye ile tam gezinme kısmi: arama ve butonlar var, odak halkası yok.
+- HSL/HSV kanvası yerine 12 hazır renk + hex.
+- Testler: sözdizimi ve modül grafiği doğrulandı; oyun içi görsel test manuel.
+
+9. KURAL
+--------------------------------------------------------------------------------
+Bu kütüphaneye "güzel görünsün" diye hiçbir şey eklenmez. Her ekleme önce
+DESIGN.md kalite kapısından geçer: tek odak, tek vurgu, tutarlı boşluk,
+yapay zekâ kokusu yok.
+================================================================================
