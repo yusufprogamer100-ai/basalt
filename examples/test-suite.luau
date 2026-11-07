@@ -2,7 +2,7 @@
 -- Every public feature in one window. Run it, click everything, and report
 -- the first error you see. Nothing here touches the game.
 
-local LIBRARY = "https://raw.githubusercontent.com/yusufprogamer100-ai/basalt/main/dist/basalt.luau?v=2"
+local LIBRARY = "https://raw.githubusercontent.com/yusufprogamer100-ai/basalt/main/dist/basalt.luau?v=3"
 
 local loaded, Basalt = pcall(function()
 	return loadstring(game:HttpGet(LIBRARY))()
