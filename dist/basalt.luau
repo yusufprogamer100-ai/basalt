@@ -1,5 +1,5 @@
 -- Basalt UI Library
--- build: 2026-11-07 03:22
+-- build: 2026-11-07 03:51
 -- modules: 27
 -- Do not edit the build directly; see src/ and tools/build.py.
 
@@ -3361,27 +3361,28 @@ function Window:_buildHeader()
 		Parent = self.main,
 	})
 
-	-- Brand mark: 22px, single accent, no wordmark glow.
+	-- Brand mark: strata. Three decreasing bars, one accent, no letterform.
 	local mark = Create.new("Frame", {
-		Size = UDim2.new(0, 22, 0, 22),
-		Position = UDim2.new(0, 14, 0, 15),
-		BackgroundColor3 = self.theme:Color("accentSoft"),
+		Name = "Mark",
+		Size = UDim2.new(0, 16, 0, 16),
+		Position = UDim2.new(0, 16, 0, 18),
+		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		Parent = self.header,
 	})
-	local markCorner = Create.corner(6)
-	markCorner.Parent = mark
 
-	local markText = Create.label({
-		Text = "B",
-		Font = Enum.Font.GothamBold,
-		TextSize = 12,
-		TextXAlignment = Enum.TextXAlignment.Center,
-		Size = UDim2.new(1, 0, 1, 0),
-		TextColor3 = self.theme:Color("accent"),
-		Parent = mark,
-	})
-	self.theme:Bind(markText, "TextColor3", "accent")
+	for index, width in ipairs({ 15, 10, 6 }) do
+		local bar = Create.new("Frame", {
+			Position = UDim2.new(0, 0, 0, (index - 1) * 5),
+			Size = UDim2.new(0, width, 0, 2),
+			BackgroundColor3 = self.theme:Color("accent"),
+			BorderSizePixel = 0,
+			Parent = mark,
+		})
+		local barCorner = Create.corner(1)
+		barCorner.Parent = bar
+		self.theme:Bind(bar, "BackgroundColor3", "accent")
+	end
 
 	local title = Create.label({
 		Text = self.title,
