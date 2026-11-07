@@ -1,5 +1,5 @@
 -- Basalt UI Library
--- build: 2026-11-07 03:51
+-- build: 2026-11-07 03:57
 -- modules: 27
 -- Do not edit the build directly; see src/ and tools/build.py.
 
@@ -40,8 +40,8 @@ __modules["core.class"] = function()
 local Class = {}
 Class.__index = Class
 
-function Class:new(...)
-	local self = setmetatable({}, self)
+function Class.new(constructor, ...)
+	local self = setmetatable({}, constructor)
 	self._connections = {}
 	self._instances = {}
 	self._destroyed = false
@@ -54,7 +54,9 @@ function Class:extends(name)
 	subclass.__index = subclass
 	subclass.super = self
 	subclass.__name = name
-	subclass.new = Class.new
+	subclass.new = function(...)
+		return Class.new(subclass, ...)
+	end
 	return subclass
 end
 
@@ -1295,7 +1297,8 @@ function Notify:Push(config)
 		Size = UDim2.new(1, 0, 0, 0),
 		Parent = toast,
 	})
-	Create.padding(12, 30, 12, 14)(body)
+	local bodyPadding = Create.padding(12, 30, 12, 14)
+	bodyPadding.Parent = body
 
 	local title = Create.label({
 		Text = config.Title or "Notification",
@@ -1319,7 +1322,7 @@ function Notify:Push(config)
 	self.theme:Bind(content, "TextColor3", "textMuted")
 
 	local close = Create.textButton({
-		Text = "Ã—",
+		Text = "×",
 		TextSize = 15,
 		TextColor3 = self.theme:Color("textDim"),
 		BackgroundTransparency = 1,
@@ -3443,7 +3446,7 @@ function Window:_buildHeader()
 	end)
 
 	self.closeButton = Create.textButton({
-		Text = "Ã—",
+		Text = "×",
 		TextSize = 16,
 		TextColor3 = self.theme:Color("textDim"),
 		BackgroundTransparency = 1,
