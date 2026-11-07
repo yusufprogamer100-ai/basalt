@@ -1,5 +1,5 @@
 -- Basalt UI Library
--- build: 2026-11-07 03:57
+-- build: 2026-11-07 04:07
 -- modules: 27
 -- Do not edit the build directly; see src/ and tools/build.py.
 
@@ -26,7 +26,7 @@ __modules["version"] = function()
 
 return {
 	name = "Basalt",
-	version = "0.1.0",
+	version = "0.2.0",
 	build = "dev",
 }
 end
@@ -197,8 +197,22 @@ local function apply(instance, props)
 	end
 end
 
+local TEXT_CLASSES = {
+	TextLabel = true,
+	TextButton = true,
+	TextBox = true,
+}
+
 function Create.new(className, props, children)
 	local instance = Instance.new(className)
+
+	-- Roblox auto-localises text whose value matches a translation key.
+	-- A menu must show exactly what the author wrote.
+	if TEXT_CLASSES[className] then
+		pcall(function()
+			instance.AutoLocalize = false
+		end)
+	end
 
 	if props then
 		apply(instance, props)
@@ -395,87 +409,86 @@ end
 
 __modules["services.theme"] = function()
 -- Basalt / services.theme
--- Single source of truth for colour. Components bind a property to a token
--- once; re-theming walks the binding table instead of the instance tree.
+-- Semantic tokens, four presets, and a binding list. A theme change walks the
+-- bindings, never the instance tree.
 
 local Create = require("core.instance")
 
 local Theme = {}
 Theme.__index = Theme
 
--- RGB triples keep the preset table readable and let us compute contrast.
+-- Fine-grained surface steps: the interface gets depth from value, not shadow.
 local PRESETS = {
 	["basalt-dark"] = {
-		bg = { 15, 17, 21 },
-		surface = { 23, 26, 32 },
-		surfaceAlt = { 30, 34, 41 },
-		raised = { 38, 43, 52 },
-		border = { 39, 44, 53 },
-		borderStrong = { 62, 69, 82 },
-		text = { 231, 234, 240 },
-		textMuted = { 140, 148, 163 },
-		textDim = { 102, 110, 124 },
-		accent = { 124, 140, 248 },
-		accentSoft = { 35, 40, 66 },
-		accentText = { 14, 16, 22 },
-		success = { 95, 191, 138 },
-		warning = { 217, 162, 95 },
-		danger = { 224, 104, 95 },
+		bg = { 9, 11, 15 },
+		surface = { 16, 19, 24 },
+		surfaceAlt = { 23, 27, 33 },
+		raised = { 30, 35, 43 },
+		border = { 37, 42, 52 },
+		borderStrong = { 58, 65, 79 },
+		text = { 235, 238, 244 },
+		textMuted = { 140, 148, 162 },
+		textDim = { 98, 106, 120 },
+		accent = { 132, 150, 255 },
+		accentSoft = { 28, 34, 54 },
+		accentText = { 9, 11, 15 },
+		success = { 104, 198, 148 },
+		warning = { 222, 170, 96 },
+		danger = { 231, 112, 102 },
 	},
 	["basalt-dusk"] = {
-		bg = { 20, 17, 22 },
-		surface = { 29, 25, 32 },
-		surfaceAlt = { 37, 32, 41 },
-		raised = { 45, 39, 50 },
-		border = { 48, 41, 53 },
-		borderStrong = { 74, 64, 82 },
-		text = { 236, 231, 239 },
-		textMuted = { 157, 146, 165 },
-		textDim = { 115, 106, 122 },
-		accent = { 196, 138, 240 },
-		accentSoft = { 48, 34, 60 },
-		accentText = { 16, 13, 19 },
-		success = { 126, 196, 148 },
-		warning = { 219, 168, 106 },
-		danger = { 226, 112, 112 },
+		bg = { 14, 11, 17 },
+		surface = { 21, 18, 26 },
+		surfaceAlt = { 29, 24, 35 },
+		raised = { 37, 31, 45 },
+		border = { 45, 38, 54 },
+		borderStrong = { 69, 58, 82 },
+		text = { 238, 233, 241 },
+		textMuted = { 158, 147, 166 },
+		textDim = { 112, 103, 120 },
+		accent = { 198, 142, 246 },
+		accentSoft = { 45, 32, 58 },
+		accentText = { 14, 11, 17 },
+		success = { 128, 200, 152 },
+		warning = { 224, 174, 110 },
+		danger = { 232, 120, 120 },
 	},
 	["basalt-light"] = {
-		bg = { 245, 246, 248 },
+		bg = { 243, 244, 247 },
 		surface = { 255, 255, 255 },
-		surfaceAlt = { 240, 241, 244 },
-		raised = { 232, 234, 238 },
-		border = { 219, 222, 228 },
-		borderStrong = { 184, 189, 198 },
-		text = { 26, 29, 34 },
-		textMuted = { 91, 98, 110 },
-		textDim = { 132, 138, 149 },
-		accent = { 62, 78, 196 },
-		accentSoft = { 226, 229, 248 },
+		surfaceAlt = { 236, 238, 242 },
+		raised = { 228, 231, 236 },
+		border = { 214, 218, 225 },
+		borderStrong = { 176, 182, 194 },
+		text = { 24, 27, 33 },
+		textMuted = { 88, 95, 108 },
+		textDim = { 130, 137, 150 },
+		accent = { 64, 82, 206 },
+		accentSoft = { 224, 228, 248 },
 		accentText = { 255, 255, 255 },
-		success = { 39, 138, 92 },
-		warning = { 158, 106, 22 },
-		danger = { 190, 58, 48 },
+		success = { 36, 138, 88 },
+		warning = { 156, 104, 20 },
+		danger = { 188, 54, 46 },
 	},
 	["basalt-contrast"] = {
 		bg = { 0, 0, 0 },
-		surface = { 10, 10, 12 },
-		surfaceAlt = { 20, 20, 24 },
-		raised = { 30, 30, 36 },
-		border = { 90, 90, 100 },
-		borderStrong = { 160, 160, 172 },
+		surface = { 12, 12, 14 },
+		surfaceAlt = { 22, 22, 26 },
+		raised = { 32, 32, 38 },
+		border = { 96, 96, 106 },
+		borderStrong = { 168, 168, 180 },
 		text = { 255, 255, 255 },
-		textMuted = { 200, 202, 210 },
-		textDim = { 170, 172, 180 },
-		accent = { 140, 190, 255 },
-		accentSoft = { 20, 42, 70 },
+		textMuted = { 202, 204, 212 },
+		textDim = { 172, 174, 182 },
+		accent = { 150, 196, 255 },
+		accentSoft = { 18, 40, 70 },
 		accentText = { 0, 0, 0 },
-		success = { 120, 240, 170 },
-		warning = { 255, 200, 110 },
-		danger = { 255, 130, 120 },
+		success = { 122, 244, 176 },
+		warning = { 255, 204, 112 },
+		danger = { 255, 132, 122 },
 	},
 }
 
--- Token order matters for the theme editor UI.
 Theme.tokenOrder = {
 	"bg",
 	"surface",
@@ -502,29 +515,22 @@ table.sort(Theme.presets)
 
 function Theme.new(presetName)
 	local self = setmetatable({}, Theme)
-	self.name = presetName or "basalt-dark"
+	self.name = "basalt-dark"
 	self.values = {}
 	self.bindings = {}
 	self.changed = require("core.signal").new()
-	self:_load(self.name)
+	self:_load(presetName or "basalt-dark")
 	return self
 end
 
 function Theme:_load(presetName)
-	local source = PRESETS[presetName] or PRESETS["basalt-dark"]
+	local fallback = PRESETS["basalt-dark"]
+	local source = PRESETS[presetName] or fallback
 	self.name = PRESETS[presetName] and presetName or "basalt-dark"
 
-	for token, rgb in pairs(source) do
-		self.values[token] = Color3.fromRGB(rgb[1], rgb[2], rgb[3])
-	end
-
-	-- Fill tokens a preset might not declare (future presets stay valid).
-	local fallback = PRESETS["basalt-dark"]
 	for _, token in ipairs(Theme.tokenOrder) do
-		if not self.values[token] and fallback[token] then
-			local rgb = fallback[token]
-			self.values[token] = Color3.fromRGB(rgb[1], rgb[2], rgb[3])
-		end
+		local rgb = source[token] or fallback[token]
+		self.values[token] = Color3.fromRGB(rgb[1], rgb[2], rgb[3])
 	end
 end
 
@@ -532,8 +538,6 @@ function Theme:Color(token)
 	return self.values[token] or self.values.text
 end
 
--- Bind instance[property] to a token. Bindings survive theme changes and are
--- the only thing re-themed; no GetDescendants() anywhere in this library.
 function Theme:Bind(instance, property, token)
 	if not instance then
 		return
@@ -545,7 +549,6 @@ function Theme:Bind(instance, property, token)
 	return binding
 end
 
--- Bind a UIStroke colour to a token (thin wrapper for readability at call sites).
 function Theme:BindStroke(stroke, token)
 	return self:Bind(stroke, "Color", token)
 end
@@ -573,10 +576,8 @@ function Theme:Apply()
 	self.changed:Fire(self)
 end
 
--- Accent used as a *background* (primary button) needs a readable foreground.
 function Theme:ForegroundOn(token)
 	local colour = self:Color(token)
-	-- Rec. 601 luma is enough for choosing black or near-black text.
 	local luma = 0.299 * colour.R + 0.587 * colour.G + 0.114 * colour.B
 	return luma > 0.55 and self:Color("accentText") or Color3.fromRGB(250, 250, 252)
 end
@@ -1208,8 +1209,8 @@ end
 
 __modules["services.notify"] = function()
 -- Basalt / services.notify
--- Toasts live in their own layer so they survive tab switches and stay above
--- popups. Height is content driven; the stack grows upward from the corner.
+-- Toasts in their own layer, stacked bottom-right. One accent strip carries
+-- the type; everything else stays quiet.
 
 local Create = require("core.instance")
 local Motion = require("services.motion")
@@ -1218,7 +1219,7 @@ local Notify = {}
 Notify.__index = Notify
 
 Notify.MAX_VISIBLE = 4
-Notify.WIDTH = 296
+Notify.WIDTH = 300
 
 local TYPE_TOKEN = {
 	info = "accent",
@@ -1227,13 +1228,40 @@ local TYPE_TOKEN = {
 	error = "danger",
 }
 
+local function closeGlyph(parent, colour)
+	local glyph = Create.new("TextButton", {
+		Name = "Close",
+		Text = "",
+		AutoButtonColor = false,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(0, 22, 0, 22),
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, -8, 0, 8),
+		Parent = parent,
+	})
+
+	for _, rotation in ipairs({ 45, -45 }) do
+		Create.new("Frame", {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.new(0.5, 0, 0.5, 0),
+			Size = UDim2.new(0, 10, 0, 1),
+			BackgroundColor3 = colour,
+			BorderSizePixel = 0,
+			Rotation = rotation,
+			Parent = glyph,
+		})
+	end
+
+	return glyph
+end
+
 function Notify.new(theme, screenGui)
-	local self = setmetatable({ theme = theme, toasts = {}, screenGui = screenGui }, Notify)
+	local self = setmetatable({ theme = theme, toasts = {} }, Notify)
 
 	self.container = Create.new("Frame", {
 		Name = "BasaltNotifications",
 		AnchorPoint = Vector2.new(1, 1),
-		Position = UDim2.new(1, -12, 1, -12),
+		Position = UDim2.new(1, -14, 1, -14),
 		Size = UDim2.new(0, Notify.WIDTH, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
 		BackgroundTransparency = 1,
@@ -1272,7 +1300,7 @@ function Notify:Push(config)
 		Name = "Toast",
 		Size = UDim2.new(1, 0, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
-		BackgroundColor3 = self.theme:Color("surface"),
+		BackgroundColor3 = self.theme:Color("surfaceAlt"),
 		LayoutOrder = order,
 		ClipsDescendants = true,
 		Parent = self.container,
@@ -1280,11 +1308,6 @@ function Notify:Push(config)
 	local corner = Create.corner(8)
 	corner.Parent = toast
 
-	local stroke = Create.stroke(self.theme:Color("border"), 1)
-	stroke.Parent = toast
-	self.theme:Bind(stroke, "Color", "border")
-
-	-- Accent strip: the only colour the toast carries.
 	local strip = Create.new("Frame", {
 		Size = UDim2.new(0, 2, 1, 0),
 		BackgroundColor3 = self.theme:Color(token),
@@ -1297,14 +1320,14 @@ function Notify:Push(config)
 		Size = UDim2.new(1, 0, 0, 0),
 		Parent = toast,
 	})
-	local bodyPadding = Create.padding(12, 30, 12, 14)
+	local bodyPadding = Create.padding(12, 34, 14, 14)
 	bodyPadding.Parent = body
 
 	local title = Create.label({
 		Text = config.Title or "Notification",
 		Font = Enum.Font.GothamMedium,
-		TextSize = 13,
-		Size = UDim2.new(1, 0, 0, 17),
+		TextSize = 12,
+		Size = UDim2.new(1, 0, 0, 16),
 		Parent = body,
 	})
 	self.theme:Bind(title, "TextColor3", "text")
@@ -1314,24 +1337,13 @@ function Notify:Push(config)
 		Font = Enum.Font.Gotham,
 		TextSize = 11,
 		TextWrapped = true,
-		TextColor3 = self.theme:Color("textMuted"),
 		Size = UDim2.new(1, 0, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
 		Parent = body,
 	})
 	self.theme:Bind(content, "TextColor3", "textMuted")
 
-	local close = Create.textButton({
-		Text = "×",
-		TextSize = 15,
-		TextColor3 = self.theme:Color("textDim"),
-		BackgroundTransparency = 1,
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -10, 0, 6),
-		Size = UDim2.new(0, 20, 0, 20),
-		Parent = toast,
-	})
-	self.theme:Bind(close, "TextColor3", "textDim")
+	local close = closeGlyph(toast, self.theme:Color("textDim"))
 
 	local progress = Create.new("Frame", {
 		AnchorPoint = Vector2.new(0, 1),
@@ -1361,9 +1373,6 @@ function Notify:Push(config)
 			end
 		end
 		Motion.tween(toast, { BackgroundTransparency = 1 }, "micro")
-		if stroke then
-			Motion.tween(stroke, { Transparency = 1 }, "micro")
-		end
 		task.delay(Motion.reduced and 0 or 0.12, function()
 			entry:Destroy()
 		end)
@@ -1387,9 +1396,9 @@ end
 
 __modules["components.base"] = function()
 -- Basalt / components.base
--- Shared behaviour for every control: row sizing, label typography, hover
--- styling, flag binding and teardown. Concrete components only describe what
--- makes them different.
+-- Shared behaviour for every control: row sizing, typography, hover, flag
+-- binding and teardown. Concrete components only describe what makes them
+-- different.
 
 local Class = require("core.class")
 local Create = require("core.instance")
@@ -1400,6 +1409,8 @@ local Component = Class:extends("Component")
 
 Component.LABEL_SIZE = 13
 Component.DESC_SIZE = 11
+Component.ROW_HEIGHT = 34
+Component.ROW_HEIGHT_DESCRIPTION = 46
 
 function Component:init(section, config, height)
 	self.section = section
@@ -1409,25 +1420,28 @@ function Component:init(section, config, height)
 	self.key = self.config.Key
 	self.title = self.config.Title or self.key or "Control"
 	self.description = self.config.Description
-	self.height = height or 32
+	self.height = height or (self.description and Component.ROW_HEIGHT_DESCRIPTION or Component.ROW_HEIGHT)
 	self.disabled = false
 	self.value = self.config.Default
 
 	self.row = Create.new("Frame", {
 		Name = "Control",
 		Size = UDim2.new(1, 0, 0, self.height),
+		BackgroundColor3 = self.theme:Color("surfaceAlt"),
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		Parent = section.content,
 	})
+	local rowCorner = Create.corner(5)
+	rowCorner.Parent = self.row
 
 	self.label = Create.label({
 		Name = "Label",
 		Text = self.title,
-		Font = Enum.Font.GothamMedium,
+		Font = Enum.Font.Gotham,
 		TextSize = Component.LABEL_SIZE,
-		Size = UDim2.new(1, -96, 0, 16),
-		Position = UDim2.new(0, 0, 0, self.description and 1 or math.floor((self.height - 16) / 2)),
+		Size = UDim2.new(1, -112, 0, 16),
+		Position = UDim2.new(0, 2, 0, self.description and 4 or math.floor((self.height - 16) / 2)),
 		Parent = self.row,
 	})
 	self.theme:Bind(self.label, "TextColor3", "text")
@@ -1438,13 +1452,21 @@ function Component:init(section, config, height)
 			Text = self.description,
 			Font = Enum.Font.Gotham,
 			TextSize = Component.DESC_SIZE,
-			TextColor3 = self.theme:Color("textMuted"),
-			Size = UDim2.new(1, -96, 0, 14),
-			Position = UDim2.new(0, 0, 0, 20),
+			Size = UDim2.new(1, -112, 0, 14),
+			Position = UDim2.new(0, 2, 0, 23),
 			Parent = self.row,
 		})
 		self.theme:Bind(self.hint, "TextColor3", "textMuted")
 	end
+
+	self.row.MouseEnter:Connect(function()
+		if not self.disabled then
+			Motion.tween(self.row, { BackgroundTransparency = 0.55 }, "micro")
+		end
+	end)
+	self.row.MouseLeave:Connect(function()
+		Motion.tween(self.row, { BackgroundTransparency = 1 }, "micro")
+	end)
 
 	if self.key then
 		Flags:Register(self.key, self.config.Default)
@@ -1457,16 +1479,13 @@ function Component:init(section, config, height)
 	section:Track(self)
 end
 
--- Position a control on the right edge of the row.
 function Component:PlaceRight(gui, width, height)
 	gui.AnchorPoint = Vector2.new(1, 0.5)
-	gui.Position = UDim2.new(1, 0, 0.5, 0)
+	gui.Position = UDim2.new(1, -2, 0.5, 0)
 	gui.Size = UDim2.new(0, width, 0, height or 20)
 	return gui
 end
 
--- Commit a value. With a key this is a flag write; without one it is a plain
--- callback so components stay usable standalone.
 function Component:Commit(value)
 	if self.key then
 		if Flags:Get(self.key) == value then
@@ -1502,14 +1521,14 @@ function Component:SetDisabled(disabled)
 	self.disabled = not not disabled
 	self.row.Active = not self.disabled
 	if self.label then
-		self.label.TextTransparency = self.disabled and 0.45 or 0
+		self.label.TextTransparency = self.disabled and 0.5 or 0
 	end
 	if self.hint then
 		self.hint.TextTransparency = self.disabled and 0.55 or 0
 	end
 end
 
--- Hover feedback limited to a border/background shift; no glows.
+-- Hover feedback is functional: a surface step, not decoration.
 function Component:Hover(gui, onEnter, onLeave)
 	local entered = gui.MouseEnter:Connect(function()
 		if not self.disabled and onEnter then
@@ -1525,7 +1544,6 @@ function Component:Hover(gui, onEnter, onLeave)
 	self:Track(left)
 end
 
--- Used by the window search box.
 function Component:Filter(query)
 	if query == "" then
 		self.row.Visible = true
@@ -1602,7 +1620,7 @@ function Divider.new(section, config)
 
 	self.row = Create.new("Frame", {
 		Name = "Divider",
-		Size = UDim2.new(1, 0, 0, config.Spacing or 9),
+		Size = UDim2.new(1, 0, 0, config.Spacing or 11),
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		Parent = section.content,
@@ -1649,9 +1667,9 @@ local Button = Component:extends("Button")
 
 local STYLES = {
 	primary = { background = "accent", text = "accentText", stroke = nil },
-	secondary = { background = "surfaceAlt", text = "text", stroke = "border" },
-	quiet = { background = "surface", text = "textMuted", stroke = "border" },
-	danger = { background = "surfaceAlt", text = "danger", stroke = "danger" },
+	secondary = { background = "raised", text = "text", stroke = nil },
+	quiet = { background = "surface", text = "textMuted", stroke = nil },
+	danger = { background = "surface", text = "danger", stroke = nil },
 }
 
 function Button:init(section, config)
@@ -1673,7 +1691,7 @@ function Button:init(section, config)
 		TextSize = 13,
 		AutoButtonColor = false,
 		BackgroundColor3 = self.theme:Color(style.background),
-		Size = UDim2.new(1, 0, 0, 32),
+		Size = UDim2.new(1, 0, 0, 30),
 		Parent = self.row,
 	})
 
@@ -1739,8 +1757,8 @@ end
 
 __modules["components.toggle"] = function()
 -- Basalt / components.toggle
--- The whole row is the hit target, not the 36px switch. State is a flag, the
--- switch is only a view of it.
+-- The whole row is the hit target. Off is a surface step, on is the accent;
+-- nothing else in the row changes, so scanning stays calm.
 
 local Component = require("components.base")
 local Create = require("core.instance")
@@ -1749,17 +1767,17 @@ local Motion = require("services.motion")
 
 local Toggle = Component:extends("Toggle")
 
-local SWITCH_W = 36
-local SWITCH_H = 20
-local KNOB = 16
+local SWITCH_W = 32
+local SWITCH_H = 18
+local KNOB = 14
 
 function Toggle:init(section, config)
 	config = config or {}
-	Component.init(self, section, config, config.Description and 40 or 32)
+	Component.init(self, section, config)
 
 	self.track = Create.new("Frame", {
 		Name = "Switch",
-		BackgroundColor3 = self.theme:Color("surfaceAlt"),
+		BackgroundColor3 = self.theme:Color("raised"),
 		BorderSizePixel = 0,
 		Parent = self.row,
 	})
@@ -1790,7 +1808,7 @@ function Toggle:init(section, config)
 	end)
 
 	self:Hover(
-		self.row,
+		self.track,
 		function()
 			Motion.tween(self.stroke, { Color = self.theme:Color("borderStrong") }, "micro")
 		end,
@@ -1808,7 +1826,7 @@ function Toggle:Render(value)
 	local on = value == true
 
 	Motion.tween(self.track, {
-		BackgroundColor3 = self.theme:Color(on and "accent" or "surfaceAlt"),
+		BackgroundColor3 = self.theme:Color(on and "accent" or "raised"),
 	}, "micro")
 
 	Motion.tween(self.stroke, {
@@ -1818,7 +1836,7 @@ function Toggle:Render(value)
 	Motion.tween(self.knob, {
 		Position = UDim2.new(0, on and (SWITCH_W - KNOB - 2) or 2, 0.5, -KNOB / 2),
 		BackgroundColor3 = self.theme:Color(on and "accentText" or "textMuted"),
-	}, "micro")
+	}, "micro", Enum.EasingStyle.Back)
 end
 
 function Toggle:Set(value)
@@ -1827,8 +1845,10 @@ end
 
 function Toggle:SetDisabled(disabled)
 	Component.SetDisabled(self, disabled)
-	self.track.BackgroundTransparency = disabled and 0.5 or 0
-	self.knob.BackgroundTransparency = disabled and 0.5 or 0
+	local alpha = disabled and 0.45 or 0
+	self.track.BackgroundTransparency = alpha
+	self.knob.BackgroundTransparency = alpha
+	self.stroke.Transparency = alpha
 end
 
 return Toggle
@@ -1849,7 +1869,7 @@ local Slider = Component:extends("Slider")
 
 function Slider:init(section, config)
 	config = config or {}
-	Component.init(self, section, config, 42)
+	Component.init(self, section, config, 46)
 
 	self.label.Size = UDim2.new(1, -130, 0, 16)
 	self.min = tonumber(config.Min) or 0
@@ -1863,11 +1883,11 @@ function Slider:init(section, config)
 		Name = "Value",
 		Text = "",
 		Font = Enum.Font.Code,
-		TextSize = 11,
+		TextSize = 10,
 		TextXAlignment = Enum.TextXAlignment.Right,
 		Size = UDim2.new(0, 120, 0, 16),
 		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, 0, 0, 0),
+		Position = UDim2.new(1, -2, 0, 3),
 		Parent = self.row,
 	})
 	self.theme:Bind(self.valueLabel, "TextColor3", "textMuted")
@@ -1876,15 +1896,15 @@ function Slider:init(section, config)
 		Name = "Track",
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
-		Position = UDim2.new(0, 0, 0, 27),
-		Size = UDim2.new(1, 0, 0, 14),
+		Position = UDim2.new(0, 2, 0, 30),
+		Size = UDim2.new(1, -2, 0, 12),
 		Parent = self.row,
 	})
 
 	self.rail = Create.new("Frame", {
 		AnchorPoint = Vector2.new(0, 0.5),
 		Position = UDim2.new(0, 0, 0.5, 0),
-		Size = UDim2.new(1, 0, 0, 4),
+		Size = UDim2.new(1, 0, 0, 3),
 		BorderSizePixel = 0,
 		BackgroundColor3 = self.theme:Color("surfaceAlt"),
 		Parent = self.bar,
@@ -1895,7 +1915,7 @@ function Slider:init(section, config)
 	self.fill = Create.new("Frame", {
 		AnchorPoint = Vector2.new(0, 0.5),
 		Position = UDim2.new(0, 0, 0.5, 0),
-		Size = UDim2.new(0, 0, 0, 4),
+		Size = UDim2.new(0, 0, 0, 3),
 		BorderSizePixel = 0,
 		BackgroundColor3 = self.theme:Color("accent"),
 		Parent = self.bar,
@@ -1908,7 +1928,7 @@ function Slider:init(section, config)
 		Name = "Knob",
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.new(0, 0, 0.5, 0),
-		Size = UDim2.new(0, 12, 0, 12),
+		Size = UDim2.new(0, 11, 0, 11),
 		BorderSizePixel = 0,
 		BackgroundColor3 = self.theme:Color("text"),
 		Parent = self.bar,
@@ -1971,7 +1991,7 @@ function Slider:Render(value)
 	local alpha = span == 0 and 0 or (value - self.min) / span
 	alpha = math.clamp(alpha, 0, 1)
 
-	self.fill.Size = UDim2.new(alpha, 0, 0, 4)
+	self.fill.Size = UDim2.new(alpha, 0, 0, 3)
 	self.knob.Position = UDim2.new(alpha, 0, 0.5, 0)
 
 	local decimals = math.max(0, self.decimals)
@@ -1987,6 +2007,7 @@ function Slider:SetDisabled(disabled)
 	self.bar.Active = not disabled
 	self.fill.BackgroundTransparency = disabled and 0.5 or 0
 	self.knob.BackgroundTransparency = disabled and 0.5 or 0
+	self.valueLabel.TextTransparency = disabled and 0.5 or 0
 end
 
 return Slider
@@ -2006,7 +2027,7 @@ local Range = Component:extends("Range")
 
 function Range:init(section, config)
 	config = config or {}
-	Component.init(self, section, config, 42)
+	Component.init(self, section, config, 46)
 
 	self.label.Size = UDim2.new(1, -150, 0, 16)
 	self.min = tonumber(config.Min) or 0
@@ -2029,7 +2050,7 @@ function Range:init(section, config)
 	self.valueLabel = Create.label({
 		Text = "",
 		Font = Enum.Font.Code,
-		TextSize = 11,
+		TextSize = 10,
 		TextXAlignment = Enum.TextXAlignment.Right,
 		Size = UDim2.new(0, 140, 0, 16),
 		AnchorPoint = Vector2.new(1, 0),
@@ -2041,15 +2062,15 @@ function Range:init(section, config)
 	self.bar = Create.new("Frame", {
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
-		Position = UDim2.new(0, 0, 0, 27),
-		Size = UDim2.new(1, 0, 0, 14),
+		Position = UDim2.new(0, 2, 0, 30),
+		Size = UDim2.new(1, -2, 0, 12),
 		Parent = self.row,
 	})
 
 	self.rail = Create.new("Frame", {
 		AnchorPoint = Vector2.new(0, 0.5),
 		Position = UDim2.new(0, 0, 0.5, 0),
-		Size = UDim2.new(1, 0, 0, 4),
+		Size = UDim2.new(1, 0, 0, 3),
 		BorderSizePixel = 0,
 		BackgroundColor3 = self.theme:Color("surfaceAlt"),
 		Parent = self.bar,
@@ -2060,7 +2081,7 @@ function Range:init(section, config)
 	self.fill = Create.new("Frame", {
 		AnchorPoint = Vector2.new(0, 0.5),
 		Position = UDim2.new(0, 0, 0.5, 0),
-		Size = UDim2.new(0, 0, 0, 4),
+		Size = UDim2.new(0, 0, 0, 3),
 		BorderSizePixel = 0,
 		BackgroundColor3 = self.theme:Color("accentSoft"),
 		Parent = self.bar,
@@ -2071,7 +2092,7 @@ function Range:init(section, config)
 
 	self.lowKnob = Create.new("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0.5),
-		Size = UDim2.new(0, 12, 0, 12),
+		Size = UDim2.new(0, 11, 0, 11),
 		BorderSizePixel = 0,
 		BackgroundColor3 = self.theme:Color("text"),
 		Parent = self.bar,
@@ -2082,7 +2103,7 @@ function Range:init(section, config)
 
 	self.highKnob = Create.new("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0.5),
-		Size = UDim2.new(0, 12, 0, 12),
+		Size = UDim2.new(0, 11, 0, 11),
 		BorderSizePixel = 0,
 		BackgroundColor3 = self.theme:Color("text"),
 		Parent = self.bar,
@@ -2167,7 +2188,7 @@ function Range:Render()
 
 	local decimals = math.max(0, self.decimals)
 	self.valueLabel.Text = string.format(
-		"%." .. decimals .. "f â€“ %." .. decimals .. "f%s",
+		"%." .. decimals .. "f - %." .. decimals .. "f%s",
 		self.low,
 		self.high,
 		self.suffix
@@ -2208,7 +2229,7 @@ local MAX_HEIGHT = 176
 
 function Dropdown:init(section, config)
 	config = config or {}
-	Component.init(self, section, config, 58)
+	Component.init(self, section, config, 54)
 
 	self.multi = config.Multi == true
 	self.values = {}
@@ -2225,7 +2246,7 @@ function Dropdown:init(section, config)
 			end
 		end
 	else
-		self.selected = tostring(config.Default or (self.values[1] or "â€”"))
+		self.selected = tostring(config.Default or (self.values[1] or "-"))
 	end
 
 	self.label.Position = UDim2.new(0, 0, 0, 0)
@@ -2240,7 +2261,7 @@ function Dropdown:init(section, config)
 		BackgroundColor3 = self.theme:Color("surfaceAlt"),
 		BorderSizePixel = 0,
 		Position = UDim2.new(0, 0, 0, 22),
-		Size = UDim2.new(1, 0, 0, 30),
+		Size = UDim2.new(1, 0, 0, 28),
 		Parent = self.row,
 	})
 	local fieldCorner = Create.corner(6)
@@ -2510,7 +2531,7 @@ local TextInput = Component:extends("Input")
 
 function TextInput:init(section, config)
 	config = config or {}
-	Component.init(self, section, config, 58)
+	Component.init(self, section, config, 54)
 
 	self.label.Position = UDim2.new(0, 0, 0, 0)
 	self.label.Size = UDim2.new(1, 0, 0, 16)
@@ -2523,7 +2544,7 @@ function TextInput:init(section, config)
 		BackgroundColor3 = self.theme:Color("surfaceAlt"),
 		BorderSizePixel = 0,
 		Position = UDim2.new(0, 0, 0, 22),
-		Size = UDim2.new(1, 0, 0, 30),
+		Size = UDim2.new(1, 0, 0, 28),
 		Parent = self.row,
 	})
 	local corner = Create.corner(6)
@@ -2622,11 +2643,11 @@ function Keybind:init(section, config)
 		Font = Enum.Font.Code,
 		TextSize = 11,
 		TextColor3 = self.theme:Color("text"),
-		BackgroundColor3 = self.theme:Color("surfaceAlt"),
-		Size = UDim2.new(0, 112, 0, 26),
+		BackgroundColor3 = self.theme:Color("raised"),
+		Size = UDim2.new(0, 108, 0, 26),
 		Parent = self.row,
 	})
-	self:PlaceRight(self.chip, 112, 26)
+	self:PlaceRight(self.chip, 108, 26)
 
 	local corner = Create.corner(5)
 	corner.Parent = self.chip
@@ -2754,8 +2775,8 @@ function Colorpicker:init(section, config)
 
 	self.swatch = Create.new("Frame", {
 		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.new(1, -52, 0.5, 0),
-		Size = UDim2.new(0, 22, 0, 22),
+		Position = UDim2.new(1, -48, 0.5, 0),
+		Size = UDim2.new(0, 20, 0, 20),
 		BackgroundColor3 = self.color,
 		BorderSizePixel = 0,
 		Parent = self.row,
@@ -2772,7 +2793,7 @@ function Colorpicker:init(section, config)
 		Size = UDim2.new(0, 46, 0, 14),
 		Text = "",
 		Font = Enum.Font.Code,
-		TextSize = 11,
+		TextSize = 10,
 		TextXAlignment = Enum.TextXAlignment.Right,
 		Parent = self.row,
 	})
@@ -2850,7 +2871,7 @@ function Colorpicker:Open()
 			BackgroundColor3 = color,
 			BorderSizePixel = 0,
 			Position = UDim2.new(0, 8 + column * cell, 0, 8 + row * cell),
-			Size = UDim2.new(0, 22, 0, 22),
+			Size = UDim2.new(0, 20, 0, 20),
 			ZIndex = 61,
 			Parent = self.popup,
 		})
@@ -2938,12 +2959,10 @@ end
 
 __modules["section"] = function()
 -- Basalt / section
--- A titled group of controls. Height is content driven: UIListLayout plus
--- AutomaticSize, no per-frame maths. Collapsing animates the content frame,
--- not the whole card, so the header never jumps.
+-- A titled group. Hierarchy comes from type and a single rule, not from a box
+-- around every group: the card is a surface step, not a border.
 
 local Create = require("core.instance")
-local Motion = require("services.motion")
 
 local Section = {}
 Section.__index = Section
@@ -2958,6 +2977,7 @@ function Section.new(tab, config)
 	self.title = config.Title or "Section"
 	self.collapsed = false
 	self.controls = {}
+	self.auto = config.Column == nil
 
 	local column = config.Column == "right" and tab.right or tab.left
 	self.column = column
@@ -2967,17 +2987,13 @@ function Section.new(tab, config)
 		Size = UDim2.new(1, 0, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
 		BackgroundColor3 = self.theme:Color("surface"),
+		BackgroundTransparency = 0,
 		BorderSizePixel = 0,
-		ClipsDescendants = false,
 		Parent = column,
 	})
 
 	local corner = Create.corner(8)
 	corner.Parent = self.frame
-
-	self.stroke = Create.stroke(self.theme:Color("border"), 1)
-	self.stroke.Parent = self.frame
-	self.theme:Bind(self.stroke, "Color", "border")
 
 	Create.new("UIListLayout", {
 		Padding = UDim.new(0, 0),
@@ -2985,24 +3001,26 @@ function Section.new(tab, config)
 		Parent = self.frame,
 	})
 
+	-- Header: small, quiet, uppercase. It labels the group; it does not compete
+	-- with the control labels below it.
 	self.header = Create.new("Frame", {
 		Name = "Header",
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
-		Size = UDim2.new(1, 0, 0, 34),
+		Size = UDim2.new(1, 0, 0, 32),
 		LayoutOrder = 1,
 		Parent = self.frame,
 	})
 
 	self.titleLabel = Create.label({
-		Text = self.title,
+		Text = string.upper(self.title),
 		Font = Enum.Font.GothamMedium,
-		TextSize = 13,
-		Size = UDim2.new(1, -84, 0, 16),
+		TextSize = 10,
+		Size = UDim2.new(1, -84, 0, 14),
 		Position = UDim2.new(0, 12, 0, 10),
 		Parent = self.header,
 	})
-	self.theme:Bind(self.titleLabel, "TextColor3", "text")
+	self.theme:Bind(self.titleLabel, "TextColor3", "textMuted")
 
 	self.badge = Create.label({
 		Text = "",
@@ -3011,11 +3029,21 @@ function Section.new(tab, config)
 		TextXAlignment = Enum.TextXAlignment.Right,
 		Size = UDim2.new(0, 64, 0, 14),
 		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -12, 0, 11),
+		Position = UDim2.new(1, -12, 0, 10),
 		TextTransparency = 1,
 		Parent = self.header,
 	})
 	self.theme:Bind(self.badge, "TextColor3", "textDim")
+
+	local rule = Create.new("Frame", {
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.new(0, 12, 1, 0),
+		Size = UDim2.new(1, -24, 0, 1),
+		BackgroundColor3 = self.theme:Color("border"),
+		BorderSizePixel = 0,
+		Parent = self.header,
+	})
+	self.theme:Bind(rule, "BackgroundColor3", "border")
 
 	self.content = Create.stack({
 		Name = "Content",
@@ -3025,20 +3053,18 @@ function Section.new(tab, config)
 	})
 
 	Create.new("UIListLayout", {
-		Padding = UDim.new(0, 8),
+		Padding = UDim.new(0, 6),
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		Parent = self.content,
 	})
 
-	Create.padding(2, 12, 14, 12).Parent = self.content
+	Create.padding(8, 8, 12, 8).Parent = self.content
 
-	-- Click on the header collapses the section. 4px tolerance keeps drags
-	-- from collapsing by accident.
 	Create.textButton({
 		Name = "Collapse",
 		Text = "",
 		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 0, 34),
+		Size = UDim2.new(1, 0, 0, 32),
 		Parent = self.header,
 	}).MouseButton1Click:Connect(function()
 		self:SetCollapsed(not self.collapsed)
@@ -3075,7 +3101,6 @@ function Section:RefreshVisibility()
 	self.frame.Visible = visible
 end
 
--- Convenience constructors: section:Toggle{...} etc.
 function Section:Toggle(config)
 	return require("components.toggle").new(self, config)
 end
@@ -3121,13 +3146,12 @@ function Section:Divider(config)
 end
 
 function Section:Space(height)
-	local row = Create.new("Frame", {
+	return Create.new("Frame", {
 		Size = UDim2.new(1, 0, 0, tonumber(height) or 4),
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		Parent = self.content,
 	})
-	return row
 end
 
 function Section:Destroy()
@@ -3148,14 +3172,17 @@ end
 
 __modules["tab"] = function()
 -- Basalt / tab
--- A tab owns one scrolling page and two section columns. Reflow is debounced
--- and driven by content size changes, so nothing polls on Heartbeat.
+-- One scrolling page, two columns, optional automatic balance. Reflow is
+-- debounced and driven by content size; nothing polls.
 
 local Create = require("core.instance")
+local Motion = require("services.motion")
 local Section = require("section")
 
 local Tab = {}
 Tab.__index = Tab
+
+local GAP = 14
 
 function Tab.new(window, config)
 	local self = setmetatable({}, Tab)
@@ -3164,9 +3191,9 @@ function Tab.new(window, config)
 	self.window = window
 	self.theme = window.theme
 	self.title = config.Title or "Tab"
-	self.icon = config.Icon
 	self.sections = {}
 	self.reflowToken = 0
+	self.balanceToken = 0
 
 	self.page = Create.new("ScrollingFrame", {
 		Name = "Page",
@@ -3194,7 +3221,7 @@ function Tab.new(window, config)
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		Position = UDim2.new(0, 0, 0, 0),
-		Size = UDim2.new(0.5, -6, 0, 0),
+		Size = UDim2.new(0.5, -7, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
 		Parent = self.body,
 	})
@@ -3203,20 +3230,20 @@ function Tab.new(window, config)
 		Name = "Right",
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
-		Position = UDim2.new(0.5, 6, 0, 0),
-		Size = UDim2.new(0.5, -6, 0, 0),
+		Position = UDim2.new(0.5, 7, 0, 0),
+		Size = UDim2.new(0.5, -7, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
 		Parent = self.body,
 	})
 
 	Create.new("UIListLayout", {
-		Padding = UDim.new(0, 12),
+		Padding = UDim.new(0, GAP),
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		Parent = self.left,
 	})
 
 	Create.new("UIListLayout", {
-		Padding = UDim.new(0, 12),
+		Padding = UDim.new(0, GAP),
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		Parent = self.right,
 	})
@@ -3232,21 +3259,78 @@ function Tab.new(window, config)
 end
 
 function Tab:Section(config)
-	local section = Section.new(self, config)
+	local section = Section.new(self, config or {})
 	table.insert(self.sections, section)
+	section.frame.LayoutOrder = #self.sections
 	self.window:RequestReflow()
+	if section.auto then
+		self:ScheduleBalance()
+	end
 	return section
+end
+
+-- Balance: explicit columns stay put; automatic sections fill the shorter
+-- column once, after their real heights are known.
+function Tab:ScheduleBalance()
+	self.balanceToken = self.balanceToken + 1
+	local token = self.balanceToken
+	task.delay(0.1, function()
+		if token == self.balanceToken then
+			self:Balance()
+		end
+	end)
+end
+
+function Tab:Balance()
+	local autos = {}
+	for _, section in ipairs(self.sections) do
+		if section.auto and section.frame then
+			table.insert(autos, section)
+		end
+	end
+	if #autos == 0 then
+		return
+	end
+
+	local leftHeight, rightHeight = 0, 0
+	for _, section in ipairs(self.sections) do
+		if not section.auto and section.frame then
+			local height = section.frame.AbsoluteSize.Y + GAP
+			if section.frame.Parent == self.right then
+				rightHeight = rightHeight + height
+			else
+				leftHeight = leftHeight + height
+			end
+		end
+	end
+
+	for index, section in ipairs(autos) do
+		local target = rightHeight < leftHeight and self.right or self.left
+		if target == self.right then
+			rightHeight = rightHeight + section.frame.AbsoluteSize.Y + GAP
+		else
+			leftHeight = leftHeight + section.frame.AbsoluteSize.Y + GAP
+		end
+		if section.frame.Parent ~= target then
+			section.frame.Parent = target
+		end
+		section.frame.LayoutOrder = index
+	end
+
+	self.window:RequestReflow(true)
 end
 
 function Tab:Reflow()
 	local height = math.max(self.left.AbsoluteSize.Y, self.right.AbsoluteSize.Y)
 	self.body.Size = UDim2.new(1, 0, 0, height)
-	self.page.CanvasSize = UDim2.new(0, 0, 0, height + 8)
+	self.page.CanvasSize = UDim2.new(0, 0, 0, height + 10)
 end
 
 function Tab:Show(visible)
 	self.page.Visible = visible
 	if visible then
+		self.body.Position = UDim2.new(0, 0, 0, 6)
+		Motion.tween(self.body, { Position = UDim2.new(0, 0, 0, 0) }, "panel")
 		self.window:RequestReflow(true)
 	end
 end
@@ -3267,16 +3351,14 @@ end
 
 __modules["window"] = function()
 -- Basalt / window
--- Frame, header, tab rail, page stack, overlay and status line. Everything a
--- user drags, resizes or searches is handled here; components stay ignorant
--- of window chrome.
+-- Chrome only: frame, header, search, tab rail, page stack, overlay, footer.
+-- Motion lives here too: drag trails, a short blur, and an opening slide.
 
 local Create = require("core.instance")
 local Guard = require("core.guard")
 local Theme = require("services.theme")
 local Motion = require("services.motion")
 local Input = require("services.input")
-local Flags = require("services.flags")
 local Config = require("services.config")
 local Notify = require("services.notify")
 local Version = require("version")
@@ -3287,10 +3369,39 @@ local UserInputService = game:GetService("UserInputService")
 local Window = {}
 Window.__index = Window
 
-local DEFAULT_SIZE = UDim2.fromOffset(720, 470)
-local HEADER = 52
+local HEADER = 58
 local RAIL = 40
-local FOOTER = 26
+local FOOTER = 22
+local DEFAULT_SIZE = UDim2.fromOffset(800, 520)
+
+local function drawnClose(parent, size, colour)
+	local button = Create.textButton({
+		Name = "Close",
+		Text = "",
+		AutoButtonColor = false,
+		BackgroundColor3 = colour,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(0, 26, 0, 26),
+		AnchorPoint = Vector2.new(1, 0),
+		Parent = parent,
+	})
+	local corner = Create.corner(6)
+	corner.Parent = button
+
+	for _, rotation in ipairs({ 45, -45 }) do
+		Create.new("Frame", {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.new(0.5, 0, 0.5, 0),
+			Size = UDim2.new(0, size, 0, 1),
+			BackgroundColor3 = colour,
+			BorderSizePixel = 0,
+			Rotation = rotation,
+			Parent = button,
+		})
+	end
+
+	return button
+end
 
 function Window.new(config)
 	local self = setmetatable({}, Window)
@@ -3302,8 +3413,10 @@ function Window.new(config)
 	self.theme = Theme.new(config.Theme or "basalt-dark")
 	self.tabs = {}
 	self.controls = {}
+	self.ghosts = {}
 	self.activeTab = nil
 	self.reflowToken = 0
+	self.dragging = false
 	self.closed = false
 
 	self.screenGui = Guard.newScreenGui("Basalt", config.DisplayOrder or 200)
@@ -3311,7 +3424,7 @@ function Window.new(config)
 	self.main = Create.new("Frame", {
 		Name = "Basalt",
 		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.new(0.5, 0, 0.5, 0),
+		Position = UDim2.new(0.5, 0, 0.5, 12),
 		Size = config.Size or DEFAULT_SIZE,
 		BackgroundColor3 = self.theme:Color("bg"),
 		BorderSizePixel = 0,
@@ -3332,7 +3445,19 @@ function Window.new(config)
 	self:_buildFooter()
 	self:_buildOverlay()
 
-	self.dragStop = Input.drag(self.main, self.header)
+	self.dragStop = Input.drag(self.main, self.header, function()
+		self.dragging = true
+		self:_setBlur(true)
+	end, function()
+		self.dragging = false
+		self:_setBlur(false)
+	end)
+
+	self.main:GetPropertyChangedSignal("Position"):Connect(function()
+		if self.dragging then
+			self:_spawnTrail()
+		end
+	end)
 
 	self.notifier = Notify.new(self.theme, self.screenGui)
 
@@ -3352,6 +3477,8 @@ function Window.new(config)
 		Config:EnableAutosave(config.Autosave == true and "default" or config.Autosave)
 	end
 
+	Motion.tween(self.main, { Position = UDim2.new(0.5, 0, 0.5, 0) }, "panel")
+
 	return self
 end
 
@@ -3364,20 +3491,22 @@ function Window:_buildHeader()
 		Parent = self.main,
 	})
 
-	-- Brand mark: strata. Three decreasing bars, one accent, no letterform.
+	-- Mark: three vertical bars, basalt columns. No letterform.
 	local mark = Create.new("Frame", {
 		Name = "Mark",
-		Size = UDim2.new(0, 16, 0, 16),
-		Position = UDim2.new(0, 16, 0, 18),
+		Size = UDim2.new(0, 20, 0, 18),
+		Position = UDim2.new(0, 16, 0, 20),
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		Parent = self.header,
 	})
 
-	for index, width in ipairs({ 15, 10, 6 }) do
+	local heights = { 12, 18, 8 }
+	for index, height in ipairs(heights) do
 		local bar = Create.new("Frame", {
-			Position = UDim2.new(0, 0, 0, (index - 1) * 5),
-			Size = UDim2.new(0, width, 0, 2),
+			AnchorPoint = Vector2.new(0, 1),
+			Position = UDim2.new(0, (index - 1) * 6, 1, 0),
+			Size = UDim2.new(0, 3, 0, height),
 			BackgroundColor3 = self.theme:Color("accent"),
 			BorderSizePixel = 0,
 			Parent = mark,
@@ -3391,31 +3520,30 @@ function Window:_buildHeader()
 		Text = self.title,
 		Font = Enum.Font.GothamMedium,
 		TextSize = 14,
-		Size = UDim2.new(0, 200, 0, 18),
-		Position = UDim2.new(0, 44, 0, 9),
+		Size = UDim2.new(0, 220, 0, 18),
+		Position = UDim2.new(0, 46, 0, 11),
 		Parent = self.header,
 	})
 	self.theme:Bind(title, "TextColor3", "text")
 
-	local subtitleText = self.subtitle or ("v" .. Version.version)
 	local subtitle = Create.label({
-		Text = subtitleText,
+		Text = self.subtitle or ("v" .. Version.version),
 		Font = Enum.Font.Gotham,
 		TextSize = 10,
-		Size = UDim2.new(0, 200, 0, 14),
-		Position = UDim2.new(0, 44, 0, 26),
+		Size = UDim2.new(0, 220, 0, 14),
+		Position = UDim2.new(0, 46, 0, 29),
 		Parent = self.header,
 	})
 	self.theme:Bind(subtitle, "TextColor3", "textDim")
 
-	-- Search: filters rows by title and description.
+	-- Search: quiet field, icon left, no border until focus.
 	local searchBox = Create.new("Frame", {
 		Name = "Search",
 		BackgroundColor3 = self.theme:Color("surface"),
 		BorderSizePixel = 0,
 		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -74, 0, 13),
-		Size = UDim2.new(0, 178, 0, 26),
+		Position = UDim2.new(1, -88, 0, 15),
+		Size = UDim2.new(0, 190, 0, 28),
 		Parent = self.header,
 	})
 	local searchCorner = Create.corner(6)
@@ -3423,6 +3551,27 @@ function Window:_buildHeader()
 	local searchStroke = Create.stroke(self.theme:Color("border"), 1)
 	searchStroke.Parent = searchBox
 	self.theme:Bind(searchStroke, "Color", "border")
+
+	local lens = Create.new("Frame", {
+		Size = UDim2.new(0, 7, 0, 7),
+		Position = UDim2.new(0, 10, 0, 10),
+		BackgroundTransparency = 1,
+		Parent = searchBox,
+	})
+	local lensStroke = Create.stroke(self.theme:Color("textDim"), 1)
+	lensStroke.Parent = lens
+	local lensCorner = Create.corner(4)
+	lensCorner.Parent = lens
+
+	Create.new("Frame", {
+		AnchorPoint = Vector2.new(0, 0.5),
+		Position = UDim2.new(0, 16, 0, 18),
+		Size = UDim2.new(0, 4, 0, 1),
+		BackgroundColor3 = self.theme:Color("textDim"),
+		BorderSizePixel = 0,
+		Rotation = 45,
+		Parent = searchBox,
+	})
 
 	self.search = Create.new("TextBox", {
 		BackgroundTransparency = 1,
@@ -3434,8 +3583,8 @@ function Window:_buildHeader()
 		PlaceholderText = "Search",
 		PlaceholderColor3 = self.theme:Color("textDim"),
 		Text = "",
-		Size = UDim2.new(1, -16, 1, 0),
-		Position = UDim2.new(0, 8, 0, 0),
+		Size = UDim2.new(1, -30, 1, 0),
+		Position = UDim2.new(0, 24, 0, 0),
 		Parent = searchBox,
 	})
 	self.theme:Bind(self.search, "TextColor3", "text")
@@ -3445,23 +3594,18 @@ function Window:_buildHeader()
 		self:Filter(self.search.Text)
 	end)
 
-	self.closeButton = Create.textButton({
-		Text = "×",
-		TextSize = 16,
-		TextColor3 = self.theme:Color("textDim"),
-		BackgroundTransparency = 1,
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -14, 0, 14),
-		Size = UDim2.new(0, 24, 0, 24),
-		Parent = self.header,
-	})
-	self.theme:Bind(self.closeButton, "TextColor3", "textDim")
+	self.closeButton = drawnClose(self.header, 10, self.theme:Color("textDim"))
+	self.closeButton.Position = UDim2.new(1, -14, 0, 16)
+	self.closeButton.MouseEnter:Connect(function()
+		Motion.tween(self.closeButton, { BackgroundTransparency = 0.85 }, "micro")
+	end)
+	self.closeButton.MouseLeave:Connect(function()
+		Motion.tween(self.closeButton, { BackgroundTransparency = 1 }, "micro")
+	end)
 	self.closeButton.MouseButton1Click:Connect(function()
 		self:SetVisible(false)
-		self:HideDock()
 	end)
 
-	-- Divider between header and rail.
 	local rule = Create.new("Frame", {
 		Position = UDim2.new(0, 0, 0, HEADER - 1),
 		Size = UDim2.new(1, 0, 0, 1),
@@ -3476,14 +3620,14 @@ function Window:_buildRail()
 		Name = "Tabs",
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
-		Position = UDim2.new(0, 12, 0, HEADER + 4),
-		Size = UDim2.new(1, -24, 0, RAIL - 4),
+		Position = UDim2.new(0, 14, 0, HEADER),
+		Size = UDim2.new(1, -28, 0, RAIL),
 		Parent = self.main,
 	})
 
 	Create.new("UIListLayout", {
 		FillDirection = Enum.FillDirection.Horizontal,
-		Padding = UDim.new(0, 4),
+		Padding = UDim.new(0, 2),
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		VerticalAlignment = Enum.VerticalAlignment.Center,
 		Parent = self.rail,
@@ -3495,8 +3639,8 @@ function Window:_buildContent()
 		Name = "Content",
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
-		Position = UDim2.new(0, 12, 0, HEADER + RAIL + 6),
-		Size = UDim2.new(1, -24, 1, -(HEADER + RAIL + FOOTER + 12)),
+		Position = UDim2.new(0, 14, 0, HEADER + RAIL + 6),
+		Size = UDim2.new(1, -28, 1, -(HEADER + RAIL + FOOTER + 14)),
 		ClipsDescendants = true,
 		Parent = self.main,
 	})
@@ -3508,27 +3652,27 @@ function Window:_buildFooter()
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.new(0, 12, 1, -6),
-		Size = UDim2.new(1, -24, 0, 16),
+		Position = UDim2.new(0, 14, 1, -5),
+		Size = UDim2.new(1, -28, 0, 14),
 		Parent = self.main,
 	})
 
 	self.status = Create.label({
 		Text = Version.name .. " " .. Version.version,
 		Font = Enum.Font.Gotham,
-		TextSize = 10,
+		TextSize = 9,
 		TextColor3 = self.theme:Color("textDim"),
-		Size = UDim2.new(0, 240, 0, 14),
+		Size = UDim2.new(0, 240, 0, 12),
 		Parent = self.footer,
 	})
 	self.theme:Bind(self.status, "TextColor3", "textDim")
 
 	self.statusRight = Create.label({
-		Text = "",
+		Text = "basalt-dark",
 		Font = Enum.Font.Gotham,
-		TextSize = 10,
+		TextSize = 9,
 		TextXAlignment = Enum.TextXAlignment.Right,
-		Size = UDim2.new(0, 240, 0, 14),
+		Size = UDim2.new(0, 240, 0, 12),
 		AnchorPoint = Vector2.new(1, 0),
 		Position = UDim2.new(1, 0, 0, 0),
 		Parent = self.footer,
@@ -3552,29 +3696,26 @@ function Window:Overlay()
 end
 
 function Window:Tab(config)
+	config = config or {}
 	local tab = Tab.new(self, config)
 
 	local button = Create.textButton({
 		Name = "TabButton",
-		Text = (config and config.Title) or "Tab",
+		Text = config.Title or "Tab",
 		Font = Enum.Font.GothamMedium,
 		TextSize = 12,
 		TextColor3 = self.theme:Color("textMuted"),
-		BackgroundColor3 = self.theme:Color("surface"),
 		BackgroundTransparency = 1,
-		Size = UDim2.new(0, 96, 0, 26),
+		Size = UDim2.new(0, 96, 0, 40),
 		Parent = self.rail,
 	})
-	local buttonCorner = Create.corner(6)
-	buttonCorner.Parent = button
 
 	local underline = Create.new("Frame", {
 		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -3),
-		Size = UDim2.new(0, 18, 0, 2),
+		Position = UDim2.new(0.5, 0, 1, -8),
+		Size = UDim2.new(0, 0, 0, 2),
 		BackgroundColor3 = self.theme:Color("accent"),
 		BorderSizePixel = 0,
-		BackgroundTransparency = 1,
 		Parent = button,
 	})
 	local underlineCorner = Create.corner(1)
@@ -3602,8 +3743,7 @@ function Window:SelectTab(tab)
 		local active = item == tab
 		item:Show(active)
 		item.button.TextColor3 = self.theme:Color(active and "text" or "textMuted")
-		item.button.BackgroundTransparency = active and 0 or 1
-		item.underline.BackgroundTransparency = active and 0 or 1
+		Motion.tween(item.underline, { Size = UDim2.new(0, active and 18 or 0, 0, 2) }, "micro")
 	end
 
 	self.activeTab = tab
@@ -3650,6 +3790,83 @@ function Window:RequestReflow(immediate)
 	end)
 end
 
+-- Drag feedback: a few fading ghosts plus a short screen blur. Both are
+-- opt-out through Motion.motionBlur = false and Motion.reduced.
+function Window:_spawnTrail()
+	if Motion.reduced or Motion.motionBlur == false then
+		return
+	end
+
+	local now = os.clock()
+	if now - (self.trailClock or 0) < 0.045 then
+		return
+	end
+	self.trailClock = now
+
+	local ghost = Create.new("Frame", {
+		Size = self.main.Size,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = self.main.Position,
+		BackgroundColor3 = self.theme:Color("accent"),
+		BackgroundTransparency = 0.94,
+		BorderSizePixel = 0,
+		ZIndex = 1,
+		Parent = self.screenGui,
+	})
+	local corner = Create.corner(10)
+	corner.Parent = ghost
+
+	table.insert(self.ghosts, ghost)
+	if #self.ghosts > 4 then
+		local oldest = table.remove(self.ghosts, 1)
+		if oldest then
+			oldest:Destroy()
+		end
+	end
+
+	Motion.tween(ghost, { BackgroundTransparency = 1 }, "panel")
+	task.delay(0.22, function()
+		if ghost.Parent then
+			ghost:Destroy()
+		end
+	end)
+end
+
+function Window:_setBlur(active)
+	if Motion.reduced or Motion.motionBlur == false then
+		return
+	end
+
+	if active then
+		if self.blur then
+			return
+		end
+		local ok, lighting = pcall(function()
+			return game:GetService("Lighting")
+		end)
+		if not ok or not lighting then
+			return
+		end
+		local effect = Instance.new("BlurEffect")
+		effect.Size = 0
+		effect.Parent = lighting
+		self.blur = effect
+		Motion.tween(effect, { Size = 6 }, "micro")
+	else
+		if not self.blur then
+			return
+		end
+		local effect = self.blur
+		self.blur = nil
+		Motion.tween(effect, { Size = 0 }, "micro")
+		task.delay(0.16, function()
+			if effect then
+				effect:Destroy()
+			end
+		end)
+	end
+end
+
 function Window:Notify(config)
 	if self.notifier then
 		return self.notifier:Push(config)
@@ -3658,7 +3875,7 @@ end
 
 function Window:SetTheme(preset)
 	if self.theme:Set(preset) then
-		self.statusRight.Text = self.theme.name
+		self.statusRight.Text = preset
 	end
 end
 
@@ -3670,13 +3887,6 @@ function Window:Toggle()
 	self:SetVisible(not self.main.Visible)
 end
 
-function Window:HideDock()
-	if self.dock then
-		self.dock:Destroy()
-		self.dock = nil
-	end
-end
-
 function Window:Destroy()
 	self.closed = true
 	if self.toggleConnection then
@@ -3685,8 +3895,11 @@ function Window:Destroy()
 	if self.dragStop then
 		self.dragStop()
 	end
+	if self.blur then
+		self.blur:Destroy()
+		self.blur = nil
+	end
 	Config:DisableAutosave()
-	self:HideDock()
 	if self.screenGui then
 		self.screenGui:Destroy()
 		self.screenGui = nil
