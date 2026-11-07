@@ -1,5 +1,5 @@
 -- Basalt UI Library
--- build: 2026-11-07 04:07
+-- build: 2026-11-07 04:08
 -- modules: 27
 -- Do not edit the build directly; see src/ and tools/build.py.
 
@@ -1845,7 +1845,7 @@ end
 
 function Toggle:SetDisabled(disabled)
 	Component.SetDisabled(self, disabled)
-	local alpha = disabled and 0.45 or 0
+	local alpha = disabled and 0.68 or 0
 	self.track.BackgroundTransparency = alpha
 	self.knob.BackgroundTransparency = alpha
 	self.stroke.Transparency = alpha
@@ -3374,12 +3374,12 @@ local RAIL = 40
 local FOOTER = 22
 local DEFAULT_SIZE = UDim2.fromOffset(800, 520)
 
-local function drawnClose(parent, size, colour)
+local function drawnClose(parent, size, colour, theme)
 	local button = Create.textButton({
 		Name = "Close",
 		Text = "",
 		AutoButtonColor = false,
-		BackgroundColor3 = colour,
+		BackgroundColor3 = theme and theme:Color("surfaceAlt") or colour,
 		BackgroundTransparency = 1,
 		Size = UDim2.new(0, 26, 0, 26),
 		AnchorPoint = Vector2.new(1, 0),
@@ -3594,7 +3594,7 @@ function Window:_buildHeader()
 		self:Filter(self.search.Text)
 	end)
 
-	self.closeButton = drawnClose(self.header, 10, self.theme:Color("textDim"))
+	self.closeButton = drawnClose(self.header, 10, self.theme:Color("textDim"), self.theme)
 	self.closeButton.Position = UDim2.new(1, -14, 0, 16)
 	self.closeButton.MouseEnter:Connect(function()
 		Motion.tween(self.closeButton, { BackgroundTransparency = 0.85 }, "micro")
@@ -3849,7 +3849,12 @@ function Window:_setBlur(active)
 		end
 		local effect = Instance.new("BlurEffect")
 		effect.Size = 0
-		effect.Parent = lighting
+		local attached = pcall(function()
+			effect.Parent = lighting
+		end)
+		if not attached then
+			return
+		end
 		self.blur = effect
 		Motion.tween(effect, { Size = 6 }, "micro")
 	else
