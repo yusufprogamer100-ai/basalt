@@ -3,7 +3,7 @@
 -- and the service APIs (flags, config, theme, motion, guard).
 -- Run it, click everything, and report the first error you see.
 
-local LIBRARY = "https://raw.githubusercontent.com/yusufprogamer100-ai/basalt/main/dist/basalt-v7.luau"
+local LIBRARY = "https://raw.githubusercontent.com/yusufprogamer100-ai/basalt/main/dist/basalt-v8.luau"
 
 local loaded, Basalt = pcall(function()
 	return loadstring(game:HttpGet(LIBRARY))()
@@ -21,6 +21,7 @@ local function crash(label, err)
 	Basalt:Notify({ Title = label, Content = tostring(err), Type = "error", Duration = 10 })
 end
 
+print("[Basalt test] creating window (v" .. Basalt._VERSION .. ")")
 local window = Basalt:Window({
 	Title = "Basalt",
 	Subtitle = "v" .. Basalt._VERSION .. " - every feature",
@@ -330,6 +331,7 @@ actions:Button({ Title = "Unload (destroy UI)", Variant = "danger", Callback = f
 	print("[Basalt test] unloaded. Re-run the script for a clean load.")
 end })
 
+print("[Basalt test] suite fully built, " .. #window.tabs .. " tabs")
 window:Notify({
 	Title = "Test suite ready",
 	Content = "8 tabs · every component · RightShift toggles",
