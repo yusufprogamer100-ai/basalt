@@ -1,5 +1,5 @@
 -- Basalt UI Library
--- build: 2026-11-07 04:08
+-- build: 2026-11-07 04:12
 -- modules: 27
 -- Do not edit the build directly; see src/ and tools/build.py.
 
@@ -26,7 +26,7 @@ __modules["version"] = function()
 
 return {
 	name = "Basalt",
-	version = "0.2.0",
+	version = "0.2.1",
 	build = "dev",
 }
 end
@@ -3281,7 +3281,8 @@ function Tab:ScheduleBalance()
 	end)
 end
 
-function Tab:Balance()
+function Tab:Balance(attempt)
+	attempt = attempt or 1
 	local autos = {}
 	for _, section in ipairs(self.sections) do
 		if section.auto and section.frame then
@@ -3289,6 +3290,17 @@ function Tab:Balance()
 		end
 	end
 	if #autos == 0 then
+		return
+	end
+
+	local measured = 0
+	for _, section in ipairs(autos) do
+		measured = measured + section.frame.AbsoluteSize.Y
+	end
+	if measured == 0 and attempt < 4 then
+		task.delay(0.15, function()
+			self:Balance(attempt + 1)
+		end)
 		return
 	end
 
@@ -3329,6 +3341,7 @@ end
 function Tab:Show(visible)
 	self.page.Visible = visible
 	if visible then
+		self.page.CanvasPosition = Vector2.new(0, 0)
 		self.body.Position = UDim2.new(0, 0, 0, 6)
 		Motion.tween(self.body, { Position = UDim2.new(0, 0, 0, 0) }, "panel")
 		self.window:RequestReflow(true)
@@ -3429,6 +3442,7 @@ function Window.new(config)
 		BackgroundColor3 = self.theme:Color("bg"),
 		BorderSizePixel = 0,
 		ClipsDescendants = false,
+		ZIndex = 5,
 		Parent = self.screenGui,
 	})
 
@@ -3447,15 +3461,15 @@ function Window.new(config)
 
 	self.dragStop = Input.drag(self.main, self.header, function()
 		self.dragging = true
-		self:_setBlur(true)
+		self:_beginGhost()
 	end, function()
 		self.dragging = false
-		self:_setBlur(false)
+		self:_endGhost()
 	end)
 
 	self.main:GetPropertyChangedSignal("Position"):Connect(function()
 		if self.dragging then
-			self:_spawnTrail()
+			self:_moveGhost()
 		end
 	end)
 
@@ -3790,86 +3804,69 @@ function Window:RequestReflow(immediate)
 	end)
 end
 
--- Drag feedback: a few fading ghosts plus a short screen blur. Both are
--- opt-out through Motion.motionBlur = false and Motion.reduced.
-function Window:_spawnTrail()
-	if Motion.reduced or Motion.motionBlur == false then
+-- Motion blur: a lagging, fading copy of the window itself. No screen blur
+-- and no tinted overlay, so colours never shift while dragging.
+
+function Window:_beginGhost()
+	if Motion.reduced or Motion.motionBlur == false or self.ghost then
 		return
 	end
 
-	local now = os.clock()
-	if now - (self.trailClock or 0) < 0.045 then
+	local ok, clone = pcall(function()
+		return self.main:Clone()
+	end)
+	if not ok or not clone then
 		return
 	end
-	self.trailClock = now
 
-	local ghost = Create.new("Frame", {
-		Size = self.main.Size,
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = self.main.Position,
-		BackgroundColor3 = self.theme:Color("accent"),
-		BackgroundTransparency = 0.94,
-		BorderSizePixel = 0,
-		ZIndex = 1,
-		Parent = self.screenGui,
-	})
-	local corner = Create.corner(10)
-	corner.Parent = ghost
-
-	table.insert(self.ghosts, ghost)
-	if #self.ghosts > 4 then
-		local oldest = table.remove(self.ghosts, 1)
-		if oldest then
-			oldest:Destroy()
-		end
+	local okGroup, group = pcall(function()
+		return Create.new("CanvasGroup", {
+			Name = "BasaltMotion",
+			Size = self.main.Size,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = self.main.Position,
+			BackgroundTransparency = 1,
+			GroupTransparency = 0.62,
+			ClipsDescendants = false,
+			ZIndex = 1,
+			Parent = self.screenGui,
+		})
+	end)
+	if not okGroup or not group then
+		return
 	end
 
-	Motion.tween(ghost, { BackgroundTransparency = 1 }, "panel")
-	task.delay(0.22, function()
+	clone.AnchorPoint = Vector2.new(0, 0)
+	clone.Position = UDim2.new(0, 0, 0, 0)
+	clone.ZIndex = 0
+	clone.Parent = group
+
+	self.ghost = group
+	self.lastPosition = self.main.Position
+end
+
+function Window:_moveGhost()
+	if not self.ghost then
+		return
+	end
+	-- The ghost keeps the previous frame position: that lag is the blur.
+	self.ghost.Position = self.lastPosition
+	self.lastPosition = self.main.Position
+end
+
+function Window:_endGhost()
+	local ghost = self.ghost
+	self.ghost = nil
+	if not ghost then
+		return
+	end
+
+	Motion.tween(ghost, { GroupTransparency = 1 }, "micro")
+	task.delay(0.2, function()
 		if ghost.Parent then
 			ghost:Destroy()
 		end
 	end)
-end
-
-function Window:_setBlur(active)
-	if Motion.reduced or Motion.motionBlur == false then
-		return
-	end
-
-	if active then
-		if self.blur then
-			return
-		end
-		local ok, lighting = pcall(function()
-			return game:GetService("Lighting")
-		end)
-		if not ok or not lighting then
-			return
-		end
-		local effect = Instance.new("BlurEffect")
-		effect.Size = 0
-		local attached = pcall(function()
-			effect.Parent = lighting
-		end)
-		if not attached then
-			return
-		end
-		self.blur = effect
-		Motion.tween(effect, { Size = 6 }, "micro")
-	else
-		if not self.blur then
-			return
-		end
-		local effect = self.blur
-		self.blur = nil
-		Motion.tween(effect, { Size = 0 }, "micro")
-		task.delay(0.16, function()
-			if effect then
-				effect:Destroy()
-			end
-		end)
-	end
 end
 
 function Window:Notify(config)
@@ -3900,9 +3897,9 @@ function Window:Destroy()
 	if self.dragStop then
 		self.dragStop()
 	end
-	if self.blur then
-		self.blur:Destroy()
-		self.blur = nil
+	if self.ghost then
+		self.ghost:Destroy()
+		self.ghost = nil
 	end
 	Config:DisableAutosave()
 	if self.screenGui then
