@@ -1,5 +1,5 @@
 -- Basalt UI Library
--- build: 2026-11-07 04:12
+-- build: 2026-11-07 04:16
 -- modules: 27
 -- Do not edit the build directly; see src/ and tools/build.py.
 
@@ -26,7 +26,7 @@ __modules["version"] = function()
 
 return {
 	name = "Basalt",
-	version = "0.2.1",
+	version = "0.2.2",
 	build = "dev",
 }
 end
@@ -3804,69 +3804,61 @@ function Window:RequestReflow(immediate)
 	end)
 end
 
--- Motion blur: a lagging, fading copy of the window itself. No screen blur
--- and no tinted overlay, so colours never shift while dragging.
+-- Motion blur: two trailing outlines that cascade behind the window. No
+-- cloning, no canvas group, no screen blur: nothing here can darken the UI.
 
 function Window:_beginGhost()
-	if Motion.reduced or Motion.motionBlur == false or self.ghost then
+	if Motion.reduced or Motion.motionBlur == false or self.trail then
 		return
 	end
 
-	local ok, clone = pcall(function()
-		return self.main:Clone()
-	end)
-	if not ok or not clone then
-		return
-	end
-
-	local okGroup, group = pcall(function()
-		return Create.new("CanvasGroup", {
-			Name = "BasaltMotion",
+	self.trail = {}
+	for _, alpha in ipairs({ 0.45, 0.7 }) do
+		local frame = Create.new("Frame", {
+			Name = "BasaltTrail",
 			Size = self.main.Size,
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			Position = self.main.Position,
 			BackgroundTransparency = 1,
-			GroupTransparency = 0.62,
-			ClipsDescendants = false,
+			BorderSizePixel = 0,
 			ZIndex = 1,
 			Parent = self.screenGui,
 		})
-	end)
-	if not okGroup or not group then
-		return
+		local corner = Create.corner(10)
+		corner.Parent = frame
+
+		local stroke = Create.stroke(self.theme:Color("accent"), 1)
+		stroke.Transparency = alpha
+		stroke.Parent = frame
+
+		table.insert(self.trail, { frame = frame, stroke = stroke })
 	end
-
-	clone.AnchorPoint = Vector2.new(0, 0)
-	clone.Position = UDim2.new(0, 0, 0, 0)
-	clone.ZIndex = 0
-	clone.Parent = group
-
-	self.ghost = group
-	self.lastPosition = self.main.Position
 end
 
 function Window:_moveGhost()
-	if not self.ghost then
+	if not self.trail then
 		return
 	end
-	-- The ghost keeps the previous frame position: that lag is the blur.
-	self.ghost.Position = self.lastPosition
-	self.lastPosition = self.main.Position
+	-- Cascade: the second trail follows the first, the first follows the window.
+	self.trail[2].frame.Position = self.trail[1].frame.Position
+	self.trail[1].frame.Position = self.main.Position
 end
 
 function Window:_endGhost()
-	local ghost = self.ghost
-	self.ghost = nil
-	if not ghost then
+	local trail = self.trail
+	self.trail = nil
+	if not trail then
 		return
 	end
 
-	Motion.tween(ghost, { GroupTransparency = 1 }, "micro")
-	task.delay(0.2, function()
-		if ghost.Parent then
-			ghost:Destroy()
-		end
-	end)
+	for _, item in ipairs(trail) do
+		Motion.tween(item.stroke, { Transparency = 1 }, "micro")
+		task.delay(0.18, function()
+			if item.frame.Parent then
+				item.frame:Destroy()
+			end
+		end)
+	end
 end
 
 function Window:Notify(config)
@@ -3897,9 +3889,13 @@ function Window:Destroy()
 	if self.dragStop then
 		self.dragStop()
 	end
-	if self.ghost then
-		self.ghost:Destroy()
-		self.ghost = nil
+	if self.trail then
+		for _, item in ipairs(self.trail) do
+			if item.frame.Parent then
+				item.frame:Destroy()
+			end
+		end
+		self.trail = nil
 	end
 	Config:DisableAutosave()
 	if self.screenGui then
