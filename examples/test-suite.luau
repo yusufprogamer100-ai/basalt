@@ -3,7 +3,7 @@
 -- and the service APIs (flags, config, theme, motion, guard).
 -- Run it, click everything, and report the first error you see.
 
-local LIBRARY = "https://raw.githubusercontent.com/yusufprogamer100-ai/basalt/main/dist/basalt-v4.luau"
+local LIBRARY = "https://raw.githubusercontent.com/yusufprogamer100-ai/basalt/main/dist/basalt-v6.luau"
 
 local loaded, Basalt = pcall(function()
 	return loadstring(game:HttpGet(LIBRARY))()
