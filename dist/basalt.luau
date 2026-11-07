@@ -1,5 +1,5 @@
 -- Basalt UI Library
--- build: 2026-11-07 04:16
+-- build: 2026-11-07 04:19
 -- modules: 27
 -- Do not edit the build directly; see src/ and tools/build.py.
 
@@ -26,7 +26,7 @@ __modules["version"] = function()
 
 return {
 	name = "Basalt",
-	version = "0.2.2",
+	version = "0.3.0",
 	build = "dev",
 }
 end
@@ -420,18 +420,18 @@ Theme.__index = Theme
 -- Fine-grained surface steps: the interface gets depth from value, not shadow.
 local PRESETS = {
 	["basalt-dark"] = {
-		bg = { 9, 11, 15 },
-		surface = { 16, 19, 24 },
-		surfaceAlt = { 23, 27, 33 },
-		raised = { 30, 35, 43 },
-		border = { 37, 42, 52 },
-		borderStrong = { 58, 65, 79 },
-		text = { 235, 238, 244 },
-		textMuted = { 140, 148, 162 },
-		textDim = { 98, 106, 120 },
+		bg = { 14, 17, 22 },
+		surface = { 21, 25, 31 },
+		surfaceAlt = { 29, 34, 42 },
+		raised = { 38, 44, 54 },
+		border = { 50, 56, 68 },
+		borderStrong = { 72, 80, 96 },
+		text = { 238, 241, 247 },
+		textMuted = { 148, 156, 170 },
+		textDim = { 106, 114, 128 },
 		accent = { 132, 150, 255 },
-		accentSoft = { 28, 34, 54 },
-		accentText = { 9, 11, 15 },
+		accentSoft = { 32, 38, 60 },
+		accentText = { 14, 17, 22 },
 		success = { 104, 198, 148 },
 		warning = { 222, 170, 96 },
 		danger = { 231, 112, 102 },
@@ -3342,8 +3342,7 @@ function Tab:Show(visible)
 	self.page.Visible = visible
 	if visible then
 		self.page.CanvasPosition = Vector2.new(0, 0)
-		self.body.Position = UDim2.new(0, 0, 0, 6)
-		Motion.tween(self.body, { Position = UDim2.new(0, 0, 0, 0) }, "panel")
+		self.body.Position = UDim2.new(0, 0, 0, 0)
 		self.window:RequestReflow(true)
 	end
 end
@@ -3437,7 +3436,7 @@ function Window.new(config)
 	self.main = Create.new("Frame", {
 		Name = "Basalt",
 		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.new(0.5, 0, 0.5, 12),
+		Position = UDim2.new(0.5, 0, 0.5, 0),
 		Size = config.Size or DEFAULT_SIZE,
 		BackgroundColor3 = self.theme:Color("bg"),
 		BorderSizePixel = 0,
@@ -3491,7 +3490,6 @@ function Window.new(config)
 		Config:EnableAutosave(config.Autosave == true and "default" or config.Autosave)
 	end
 
-	Motion.tween(self.main, { Position = UDim2.new(0.5, 0, 0.5, 0) }, "panel")
 
 	return self
 end
@@ -3757,7 +3755,7 @@ function Window:SelectTab(tab)
 		local active = item == tab
 		item:Show(active)
 		item.button.TextColor3 = self.theme:Color(active and "text" or "textMuted")
-		Motion.tween(item.underline, { Size = UDim2.new(0, active and 18 or 0, 0, 2) }, "micro")
+		item.underline.Size = UDim2.new(0, active and 18 or 0, 0, 2)
 	end
 
 	self.activeTab = tab
@@ -3808,57 +3806,12 @@ end
 -- cloning, no canvas group, no screen blur: nothing here can darken the UI.
 
 function Window:_beginGhost()
-	if Motion.reduced or Motion.motionBlur == false or self.trail then
-		return
-	end
-
-	self.trail = {}
-	for _, alpha in ipairs({ 0.45, 0.7 }) do
-		local frame = Create.new("Frame", {
-			Name = "BasaltTrail",
-			Size = self.main.Size,
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = self.main.Position,
-			BackgroundTransparency = 1,
-			BorderSizePixel = 0,
-			ZIndex = 1,
-			Parent = self.screenGui,
-		})
-		local corner = Create.corner(10)
-		corner.Parent = frame
-
-		local stroke = Create.stroke(self.theme:Color("accent"), 1)
-		stroke.Transparency = alpha
-		stroke.Parent = frame
-
-		table.insert(self.trail, { frame = frame, stroke = stroke })
-	end
 end
 
 function Window:_moveGhost()
-	if not self.trail then
-		return
-	end
-	-- Cascade: the second trail follows the first, the first follows the window.
-	self.trail[2].frame.Position = self.trail[1].frame.Position
-	self.trail[1].frame.Position = self.main.Position
 end
 
 function Window:_endGhost()
-	local trail = self.trail
-	self.trail = nil
-	if not trail then
-		return
-	end
-
-	for _, item in ipairs(trail) do
-		Motion.tween(item.stroke, { Transparency = 1 }, "micro")
-		task.delay(0.18, function()
-			if item.frame.Parent then
-				item.frame:Destroy()
-			end
-		end)
-	end
 end
 
 function Window:Notify(config)
